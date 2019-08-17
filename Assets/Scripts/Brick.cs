@@ -13,7 +13,7 @@ public class Brick : MonoBehaviour, IDamageable
 
     private SpriteRenderer _renderer;
 
-    void Start()
+    private void Awake()
     {
         _renderer = GetComponent<SpriteRenderer>();
 
