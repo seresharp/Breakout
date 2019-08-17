@@ -10,7 +10,6 @@ public class GameManager : MonoBehaviour
     {
         // Get size of brick
         _brickSize = brickPrefab.GetComponent<BoxCollider2D>().size * brickPrefab.transform.localScale;
-        Debug.Log(_brickSize);
 
         // Container to hold every brick in play
         _brickContainer = new GameObject("Bricks");
