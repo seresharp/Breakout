@@ -44,6 +44,11 @@ public class Brick : MonoBehaviour, IDamageable
         _renderer.color = c;
     }
 
+    public Color GetColor()
+    {
+        return _renderer.color;
+    }
+
     private void UpdateSprite()
     {
         int healthLost = _maxHealth - health;
