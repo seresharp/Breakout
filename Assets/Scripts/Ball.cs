@@ -21,11 +21,6 @@ public class Ball : MonoBehaviour
         _initialSpeed = velocity.magnitude;
     }
 
-    private void FixedUpdate()
-    {
-        _rb2d.velocity = velocity;
-    }
-
     private void OnCollisionEnter2D(Collision2D collision)
     {
         // Special case for collision with top of paddle
@@ -33,16 +28,8 @@ public class Ball : MonoBehaviour
         {
             // Reflect based on x diff between ball and paddle
             float xDiff = transform.position.x - collision.collider.transform.position.x;
-            velocity = new Vector2(xDiff * 3, 1).normalized * velocity.magnitude;
+            _rb2d.velocity = new Vector2(xDiff * 3, 1).normalized * _rb2d.velocity.magnitude;
             return;
-        }
-
-        // Reflect ball off of collided surface
-        // Using collision normals results in odd bounces on corners, raycast works better
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, velocity, 2.5f);
-        if (hit.collider)
-        {
-            velocity = Vector2.Reflect(velocity, hit.normal);
         }
 
         // Send hit to surface, if applicable
@@ -53,7 +40,7 @@ public class Ball : MonoBehaviour
         if (brick && !_colorsHit.Contains(brick.GetColor()))
         {
             _colorsHit.Add(brick.GetColor());
-            velocity = _initialSpeed * (1 + _colorsHit.Count * 0.5f) * velocity.normalized;
+            _rb2d.velocity = _initialSpeed * (1 + _colorsHit.Count * 0.5f) * _rb2d.velocity.normalized;
         }
     }
 }
