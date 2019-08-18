@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(CircleCollider2D))]
 public class Ball : MonoBehaviour
 {
-    public Vector2 velocity;
+    public float speed;
 
     // For controlling increases in ball speed due to hitting bricks
     private float _initialSpeed;
@@ -14,11 +14,18 @@ public class Ball : MonoBehaviour
 
     private Rigidbody2D _rb2d;
 
-    private void Start()
+    private void Awake()
     {
         _rb2d = GetComponent<Rigidbody2D>();
-        _rb2d.velocity = velocity;
-        _initialSpeed = velocity.magnitude;
+        _rb2d.velocity = new Vector2(0, speed);
+        _initialSpeed = speed;
+    }
+
+    // Some collisions (eg corners) change speed even with a 100% bouncy physics material
+    // Setting speed on every physics frame as a sloppy fix to this
+    private void FixedUpdate()
+    {
+        _rb2d.velocity = speed * _rb2d.velocity.normalized;
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -40,7 +47,7 @@ public class Ball : MonoBehaviour
         if (brick && !_colorsHit.Contains(brick.GetColor()))
         {
             _colorsHit.Add(brick.GetColor());
-            _rb2d.velocity = _initialSpeed * (1 + _colorsHit.Count * 0.5f) * _rb2d.velocity.normalized;
+            speed = _initialSpeed * (1 + _colorsHit.Count * 0.5f);
         }
     }
 }

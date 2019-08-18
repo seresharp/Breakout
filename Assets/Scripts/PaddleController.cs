@@ -28,7 +28,7 @@ public class PaddleController : MonoBehaviour
         {
             _rb2d.AddForce(new Vector2(acceleration, 0));
         }
-        else if (_rb2d.velocity.magnitude <= 0.05f)
+        else if (_rb2d.velocity.magnitude <= 0.1f)
         {
             // Deceleration causes wobbling around 0, this check prevents that
             _rb2d.velocity = Vector2.zero;

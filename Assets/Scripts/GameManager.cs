@@ -93,7 +93,8 @@ public class GameManager : MonoBehaviour
 
     public void AddBall()
     {
-        Instantiate(ballPrefab, _paddle.transform.position + new Vector3(0, _ballSize.y / 2f), Quaternion.identity,
+        // Spawn a ball slightly over the paddle
+        Instantiate(ballPrefab, _paddle.transform.position + new Vector3(0, _ballSize.y), Quaternion.identity,
             _ballContainer.transform);
     }
 }
