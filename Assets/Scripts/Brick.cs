@@ -10,6 +10,7 @@ public class Brick : MonoBehaviour, IDamageable
     public Sprite[] images;
 
     private int _maxHealth;
+    private int _points;
 
     private SpriteRenderer _renderer;
 
@@ -47,6 +48,16 @@ public class Brick : MonoBehaviour, IDamageable
     public Color GetColor()
     {
         return _renderer.color;
+    }
+
+    public void SetPoints(int points)
+    {
+        _points = points;
+    }
+
+    private void OnDestroy()
+    {
+        GameManager.Instance.GivePoints(_points);
     }
 
     private void UpdateSprite()

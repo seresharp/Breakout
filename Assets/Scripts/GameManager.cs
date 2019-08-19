@@ -1,9 +1,17 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     public GameObject brickPrefab;
     public GameObject ballPrefab;
+    public Text scoreText;
+    public Text livesText;
+    public Text levelText;
+
+    private int _lives = 3;
+    private int _score;
+    private int _level = 1;
 
     private GameObject _paddle;
 
@@ -51,20 +59,25 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0; j < 6; j++)
             {
-                GameObject brick = Instantiate(brickPrefab, _brickContainer.transform);
-                brick.transform.position = new Vector2(i * _brickSize.x, j * _brickSize.y);
+                GameObject brickObj = Instantiate(brickPrefab, _brickContainer.transform);
+                brickObj.transform.position = new Vector2(i * _brickSize.x, j * _brickSize.y);
+
+                Brick brick = brickObj.GetComponent<Brick>();
 
                 if (j <= 1)
                 {
-                    brick.GetComponent<Brick>().SetColor(Color.green);
+                    brick.SetColor(Color.green);
+                    brick.SetPoints(1);
                 }
                 else if (j <= 3)
                 {
-                    brick.GetComponent<Brick>().SetColor(new Color(1, 165f / 255f, 0));
+                    brick.SetColor(new Color(1, 165f / 255f, 0));
+                    brick.SetPoints(3);
                 }
                 else
                 {
-                    brick.GetComponent<Brick>().SetColor(Color.red);
+                    brick.SetColor(Color.red);
+                    brick.SetPoints(5);
                 }
             }
         }
@@ -87,7 +100,15 @@ public class GameManager : MonoBehaviour
         // Add a new ball if the player is out
         if (_ballContainer.transform.childCount == 0)
         {
-            AddBall();
+            if (_lives <= 0)
+            {
+            }
+            else
+            {
+                _lives--;
+                livesText.text = "Lives: " + _lives;
+                AddBall();
+            }
         }
     }
 
@@ -96,5 +117,11 @@ public class GameManager : MonoBehaviour
         // Spawn a ball slightly over the paddle
         Instantiate(ballPrefab, _paddle.transform.position + new Vector3(0, _ballSize.y), Quaternion.identity,
             _ballContainer.transform);
+    }
+
+    public void GivePoints(int points)
+    {
+        _score += points;
+        scoreText.text = "Score: " + _score;
     }
 }
