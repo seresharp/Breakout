@@ -1,5 +1,8 @@
-﻿using UnityEngine;
+﻿using System.Text;
+using Interfaces;
+using UnityEngine;
 using UnityEngine.UI;
+using Random = System.Random;
 
 public class GameManager : MonoBehaviour
 {
@@ -54,40 +57,21 @@ public class GameManager : MonoBehaviour
         _brickContainer = new GameObject("Bricks");
         _ballContainer = new GameObject("Balls");
 
-        // Create game stage TODO: Don't hard code this
-        for (int i = 0; i < 11; i++)
-        {
-            for (int j = 0; j < 6; j++)
-            {
-                GameObject brickObj = Instantiate(brickPrefab, _brickContainer.transform);
-                brickObj.transform.position = new Vector2(i * _brickSize.x, j * _brickSize.y);
-
-                Brick brick = brickObj.GetComponent<Brick>();
-
-                if (j <= 1)
-                {
-                    brick.SetColor(Color.green);
-                    brick.SetPoints(1);
-                }
-                else if (j <= 3)
-                {
-                    brick.SetColor(new Color(1, 165f / 255f, 0));
-                    brick.SetPoints(3);
-                }
-                else
-                {
-                    brick.SetColor(Color.red);
-                    brick.SetPoints(5);
-                }
-            }
-        }
-
         // Begin the game
+        LoadStage(_level);
         AddBall();
     }
 
     private void Update()
     {
+        if (Application.isEditor && Input.GetKeyDown(KeyCode.F1))
+        {
+            foreach (IDamageable damageable in FindObjectsOfType<Brick>())
+            {
+                damageable.TakeHit(1);
+            }
+        }
+
         // Destroy balls that fall below the stage
         foreach (Transform ball in _ballContainer.transform)
         {
@@ -110,6 +94,22 @@ public class GameManager : MonoBehaviour
                 AddBall();
             }
         }
+
+        // Go to the next stage if there are no more bricks
+        if (_brickContainer.transform.childCount == 0)
+        {
+            _level++;
+            levelText.text = "Level " + _level;
+
+            // Destroy current balls, load the next stage
+            foreach (Transform ball in _ballContainer.transform)
+            {
+                Destroy(ball.gameObject);
+            }
+
+            LoadStage(_level);
+            AddBall();
+        }
     }
 
     public void AddBall()
@@ -123,5 +123,67 @@ public class GameManager : MonoBehaviour
     {
         _score += points;
         scoreText.text = "Score: " + _score;
+    }
+
+    private void LoadStage(int stage)
+    {
+        TextAsset t = Resources.Load<TextAsset>("Levels/" + stage);
+        string[] lines = t == null ? CreateRandomStage() : t.text.Split('\n');
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            Debug.Log(lines[i]);
+            for (int j = 0; j < lines[i].Length; j++)
+            {
+                // Ignore any invalid colors
+                if (lines[i][j] != 'R' && lines[i][j] != 'O' && lines[i][j] != 'G')
+                {
+                    continue;
+                }
+
+                // Create object from prefab
+                GameObject brickObj = Instantiate(brickPrefab, _brickContainer.transform);
+                brickObj.transform.position = new Vector2(j * _brickSize.x, 1.25f - i * _brickSize.y);
+
+                Brick brick = brickObj.GetComponent<Brick>();
+
+                // Set color and points
+                switch (lines[i][j])
+                {
+                    case 'R':
+                        brick.SetColor(Color.red);
+                        brick.SetPoints(5);
+                        break;
+                    case 'O':
+                        brick.SetColor(new Color(1, 165f / 255f, 0));
+                        brick.SetPoints(3);
+                        break;
+                    case 'G':
+                        brick.SetColor(Color.green);
+                        brick.SetPoints(1);
+                        break;
+                }
+            }
+        }
+    }
+
+    private string[] CreateRandomStage()
+    {
+        char[] colors = {'R', 'O', 'G', ' '};
+        Random rnd = new Random();
+
+        string[] lines = new string[rnd.Next(5) + 5];
+        for (int i = 0; i < lines.Length; i++)
+        {
+            StringBuilder line = new StringBuilder();
+            for (int j = 0; j < 11; j++)
+            {
+                line.Append(colors[rnd.Next(colors.Length)]);
+            }
+
+            lines[i] = line.ToString();
+        }
+
+        return lines;
     }
 }
