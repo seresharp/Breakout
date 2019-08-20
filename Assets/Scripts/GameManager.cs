@@ -1,4 +1,8 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Interfaces;
 using UnityEngine;
 using UnityEngine.UI;
@@ -42,6 +46,36 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public int Lives
+    {
+        get => _lives;
+        set
+        {
+            _lives = value;
+            livesText.text = "Lives: " + _lives;
+        }
+    }
+
+    public int Score
+    {
+        get => _score;
+        set
+        {
+            _score = value;
+            scoreText.text = "Score: " + _score;
+        }
+    }
+
+    public int Level
+    {
+        get => _level;
+        set
+        {
+            _level = value;
+            levelText.text = "Level " + _level;
+        }
+    }
+
     private void Start()
     {
         // Locate paddle
@@ -58,12 +92,16 @@ public class GameManager : MonoBehaviour
         _ballContainer = new GameObject("Balls");
 
         // Begin the game
-        LoadStage(_level);
-        AddBall();
+        StartCoroutine(LoadStage(Level));
     }
 
     private void Update()
     {
+        if (Time.timeScale < Mathf.Epsilon)
+        {
+            return;
+        }
+
         if (Application.isEditor && Input.GetKeyDown(KeyCode.F1))
         {
             foreach (IDamageable damageable in FindObjectsOfType<Brick>())
@@ -84,13 +122,12 @@ public class GameManager : MonoBehaviour
         // Add a new ball if the player is out
         if (_ballContainer.transform.childCount == 0)
         {
-            if (_lives <= 0)
+            if (Lives <= 0)
             {
             }
             else
             {
-                _lives--;
-                livesText.text = "Lives: " + _lives;
+                Lives--;
                 AddBall();
             }
         }
@@ -98,17 +135,7 @@ public class GameManager : MonoBehaviour
         // Go to the next stage if there are no more bricks
         if (_brickContainer.transform.childCount == 0)
         {
-            _level++;
-            levelText.text = "Level " + _level;
-
-            // Destroy current balls, load the next stage
-            foreach (Transform ball in _ballContainer.transform)
-            {
-                Destroy(ball.gameObject);
-            }
-
-            LoadStage(_level);
-            AddBall();
+            StartCoroutine(LoadStage(++Level));
         }
     }
 
@@ -119,52 +146,82 @@ public class GameManager : MonoBehaviour
             _ballContainer.transform);
     }
 
-    public void GivePoints(int points)
+    private IEnumerator LoadStage(int stage)
     {
-        _score += points;
-        scoreText.text = "Score: " + _score;
-    }
+        // Destroy current balls before loading the next stage
+        foreach (Transform ball in _ballContainer.transform)
+        {
+            Destroy(ball.gameObject);
+        }
 
-    private void LoadStage(int stage)
-    {
+        // Pause the game for the pop in effect
+        Time.timeScale = 0f;
+        AddBall();
+
+        // Load level from resources, or create a random one if there's none left
         TextAsset t = Resources.Load<TextAsset>("Levels/" + stage);
         string[] lines = t == null ? CreateRandomStage() : t.text.Split('\n');
 
+        // Setup values for random effect
+        List<int> yVals = Enumerable.Range(0, lines.Length).ToList();
+
+        Dictionary<int, List<int>> xVals = new Dictionary<int, List<int>>();
         for (int i = 0; i < lines.Length; i++)
         {
-            Debug.Log(lines[i]);
-            for (int j = 0; j < lines[i].Length; j++)
-            {
-                // Ignore any invalid colors
-                if (lines[i][j] != 'R' && lines[i][j] != 'O' && lines[i][j] != 'G')
-                {
-                    continue;
-                }
-
-                // Create object from prefab
-                GameObject brickObj = Instantiate(brickPrefab, _brickContainer.transform);
-                brickObj.transform.position = new Vector2(j * _brickSize.x, 1.25f - i * _brickSize.y);
-
-                Brick brick = brickObj.GetComponent<Brick>();
-
-                // Set color and points
-                switch (lines[i][j])
-                {
-                    case 'R':
-                        brick.SetColor(Color.red);
-                        brick.SetPoints(5);
-                        break;
-                    case 'O':
-                        brick.SetColor(new Color(1, 165f / 255f, 0));
-                        brick.SetPoints(3);
-                        break;
-                    case 'G':
-                        brick.SetColor(Color.green);
-                        brick.SetPoints(1);
-                        break;
-                }
-            }
+            xVals.Add(i, Enumerable.Range(0, lines[i].Length).ToList());
         }
+
+        Random rnd = new Random();
+        while (yVals.Count > 0)
+        {
+            // Choose random x and y to place brick at
+            int i = rnd.Next(yVals.Count);
+            int y = yVals[i];
+            int x = xVals[y].PopRandom();
+
+            // Remove full rows from the y list
+            if (xVals[y].Count == 0)
+            {
+                yVals.RemoveAt(i);
+            }
+
+            // Ignore any invalid colors
+            if (lines[y][x] != 'R' && lines[y][x] != 'O' && lines[y][x] != 'G')
+            {
+                continue;
+            }
+
+            // Create object from prefab
+            GameObject brickObj = Instantiate(brickPrefab, _brickContainer.transform);
+            brickObj.transform.position = new Vector2(x * _brickSize.x, 1.25f - y * _brickSize.y);
+
+            Brick brick = brickObj.GetComponent<Brick>();
+
+            // Set color and points
+            switch (lines[y][x])
+            {
+                case 'R':
+                    brick.SetColor(Color.red);
+                    brick.SetPoints(5);
+                    break;
+                case 'O':
+                    brick.SetColor(new Color(1, 165f / 255f, 0));
+                    brick.SetPoints(3);
+                    break;
+                case 'G':
+                default:
+                    brick.SetColor(Color.green);
+                    brick.SetPoints(1);
+                    break;
+            }
+
+            yield return new WaitForSecondsRealtime(0.01f);
+        }
+
+        // Beginning immediately after the bricks pop in is too abrupt
+        yield return new WaitForSecondsRealtime(1f);
+
+        Time.timeScale = 1f;
     }
 
     private string[] CreateRandomStage()

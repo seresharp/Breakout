@@ -32,6 +32,7 @@ public class Brick : MonoBehaviour, IDamageable
     {
         if ((health -= damage) <= 0)
         {
+            GameManager.Instance.Score += _points;
             Destroy(gameObject);
             return true;
         }
@@ -53,11 +54,6 @@ public class Brick : MonoBehaviour, IDamageable
     public void SetPoints(int points)
     {
         _points = points;
-    }
-
-    private void OnDestroy()
-    {
-        GameManager.Instance.GivePoints(_points);
     }
 
     private void UpdateSprite()
