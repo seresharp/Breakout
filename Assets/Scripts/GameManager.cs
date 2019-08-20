@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
     public Text levelText;
     public GameObject playButton;
     public GameObject gameOverScreen;
+    public GameObject nextLevelPrompt;
 
     private int _lives = 3;
     private int _score;
@@ -196,6 +197,13 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 0f;
         AddBall();
 
+        // Display next level prompt
+        if (stage > 1)
+        {
+            nextLevelPrompt.transform.Find("LevelText").GetComponent<Text>().text = "Starting Level " + stage;
+            nextLevelPrompt.SetActive(true);
+        }
+
         // Load level from resources, or create a random one if there's none left
         TextAsset t = Resources.Load<TextAsset>("Levels/" + stage);
         string[] lines = t == null ? CreateRandomStage() : t.text.Split('\n');
@@ -266,6 +274,7 @@ public class GameManager : MonoBehaviour
             // Start without user input on other levels
             // Beginning immediately after the bricks pop in is too abrupt
             yield return new WaitForSecondsRealtime(1f);
+            nextLevelPrompt.SetActive(false);
             Time.timeScale = 1f;
         }
     }
