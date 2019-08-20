@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Interfaces;
+using JetBrains.Annotations;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Random = System.Random;
 
@@ -15,12 +17,15 @@ public class GameManager : MonoBehaviour
     public Text scoreText;
     public Text livesText;
     public Text levelText;
+    public GameObject playButton;
+    public GameObject gameOverScreen;
 
     private int _lives = 3;
     private int _score;
     private int _level = 1;
 
     private GameObject _paddle;
+    private Vector2 _paddleStartPosition;
 
     private GameObject _brickContainer;
     private Vector2 _brickSize;
@@ -80,6 +85,7 @@ public class GameManager : MonoBehaviour
     {
         // Locate paddle
         _paddle = GameObject.FindWithTag("Paddle");
+        _paddleStartPosition = _paddle.transform.position;
 
         // Get size of objects
         _brickSize = brickPrefab.GetComponent<BoxCollider2D>().size * brickPrefab.transform.localScale;
@@ -110,6 +116,14 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        if (Application.isEditor && Input.GetKeyDown(KeyCode.F2))
+        {
+            foreach (Transform ball in _ballContainer.transform)
+            {
+                Destroy(ball.gameObject);
+            }
+        }
+
         // Destroy balls that fall below the stage
         foreach (Transform ball in _ballContainer.transform)
         {
@@ -124,6 +138,15 @@ public class GameManager : MonoBehaviour
         {
             if (Lives <= 0)
             {
+                // Destroy all bricks so the game over text isn't obscured
+                foreach (Transform brick in _brickContainer.transform)
+                {
+                    Destroy(brick.gameObject);
+                }
+
+                // Display game over screen
+                gameOverScreen.SetActive(true);
+                Time.timeScale = 0f;
             }
             else
             {
@@ -139,6 +162,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    [UsedImplicitly]
+    public void StartGame()
+    {
+        playButton.SetActive(false);
+        Time.timeScale = 1f;
+    }
+
+    [UsedImplicitly]
+    public void ResetGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name, LoadSceneMode.Single);
+    }
+
     public void AddBall()
     {
         // Spawn a ball slightly over the paddle
@@ -148,6 +184,8 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator LoadStage(int stage)
     {
+        ResetPaddle();
+
         // Destroy current balls before loading the next stage
         foreach (Transform ball in _ballContainer.transform)
         {
@@ -218,10 +256,18 @@ public class GameManager : MonoBehaviour
             yield return new WaitForSecondsRealtime(0.01f);
         }
 
-        // Beginning immediately after the bricks pop in is too abrupt
-        yield return new WaitForSecondsRealtime(1f);
-
-        Time.timeScale = 1f;
+        if (Level == 1)
+        {
+            // Wait for a button press for the first stage
+            playButton.SetActive(true);
+        }
+        else
+        {
+            // Start without user input on other levels
+            // Beginning immediately after the bricks pop in is too abrupt
+            yield return new WaitForSecondsRealtime(1f);
+            Time.timeScale = 1f;
+        }
     }
 
     private string[] CreateRandomStage()
@@ -242,5 +288,11 @@ public class GameManager : MonoBehaviour
         }
 
         return lines;
+    }
+
+    private void ResetPaddle()
+    {
+        _paddle.transform.position = _paddleStartPosition;
+        _paddle.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
     }
 }
